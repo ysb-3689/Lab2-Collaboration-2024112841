@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * 测试用例总体设计原则：
@@ -108,5 +109,77 @@ public class L2024112841_4_Test {
                     "测试输入：" + Arrays.toString(original)
             );
         }
+    }
+
+    // ------------------------------------------------------------------
+    // 以下用例由代码评审者补充（2024112758）
+    // ------------------------------------------------------------------
+
+    /**
+     * 测试目的：验证空数组（长度为 0）也能安全返回 0。
+     * 测试用例：[]，期望结果为 0。
+     */
+    @Test
+    void testEmptyArray() {
+        assertEquals(0, solution.maximumGap(new int[]{}));
+    }
+
+    /**
+     * 测试目的：回归测试「位权 exp 使用 int 会溢出」的缺陷。
+     * 测试用例：[0, Integer.MAX_VALUE]。修复前 exp 依次变成 1410065408、1215752192、
+     *          最后溢出为负数，导致 (value / exp) % 10 为负下标，抛
+     *          ArrayIndexOutOfBoundsException: Index -2 out of bounds for length 10。
+     * 预期结果：返回 2147483647。
+     */
+    @Test
+    void testIntMaxValueBoundary() {
+        assertEquals(
+                Integer.MAX_VALUE,
+                solution.maximumGap(new int[]{0, Integer.MAX_VALUE})
+        );
+    }
+
+    /**
+     * 测试目的：验证 null 输入被转换为语义明确的 IllegalArgumentException。
+     * 测试用例：nums = null。
+     * 预期结果：抛出 IllegalArgumentException（而不是 NullPointerException）。
+     */
+    @Test
+    void testNullInputRejected() {
+        assertThrows(IllegalArgumentException.class, () -> solution.maximumGap(null));
+    }
+
+    /**
+     * 测试目的：验证负数输入被明确拒绝，而不是抛出难以理解的下标越界异常。
+     * 测试用例：[-5, 3]。基数排序按十进制位统计，负数的余数为负，无法处理。
+     * 预期结果：抛出 IllegalArgumentException。
+     */
+    @Test
+    void testNegativeInputRejected() {
+        assertThrows(IllegalArgumentException.class, () -> solution.maximumGap(new int[]{-5, 3}));
+    }
+
+    /**
+     * 测试目的：验证大规模输入（题目上限 10^5）下结果正确且耗时可控（O(dn) 基数排序）。
+     * 测试用例：固定种子生成的 100000 个 [0, 10^9] 随机整数，以 Arrays.sort 的结果为预言。
+     * 预期结果：与排序预言一致。
+     */
+    @Test
+    void testLargeScaleAgainstSortingOracle() {
+        Random random = new Random(2024112758L);
+        int length = 100_000;
+        int[] nums = new int[length];
+        for (int i = 0; i < length; i++) {
+            nums[i] = random.nextInt(1_000_000_001);
+        }
+
+        int[] sorted = nums.clone();
+        Arrays.sort(sorted);
+        int expected = 0;
+        for (int i = 1; i < sorted.length; i++) {
+            expected = Math.max(expected, sorted[i] - sorted[i - 1]);
+        }
+
+        assertEquals(expected, solution.maximumGap(nums));
     }
 }
